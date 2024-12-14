@@ -202,7 +202,7 @@
 
         // Generate QR Code
         function generateQRCode(filename) {
-            const fileUrl = `http://localhost:3000/files/${filename}`;
+            const fileUrl = `https://html-i5js.onrender.com/files/${filename}`;
 
             // Generate QR Code
             QRCode.toCanvas(qrCodeCanvas, fileUrl, function (error) {
