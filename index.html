@@ -62,7 +62,9 @@
 
     <section id="editSection" style="display: none;">
         <h2>Edit File</h2>
-        <textarea id="fileContent" rows="10"></textarea>
+        <label for="editUrl">Edit Redirect URL:</label>
+        <input type="text" id="editUrl" name="editUrl" placeholder="https://www.example.com" required />
+
         <button id="saveFile">Save Changes</button>
     </section>
 
@@ -78,7 +80,7 @@
         const responseMessage = document.getElementById('responseMessage');
         const fileList = document.getElementById('fileList');
         const editSection = document.getElementById('editSection');
-        const fileContent = document.getElementById('fileContent');
+        const editUrl = document.getElementById('editUrl');
         const saveFileButton = document.getElementById('saveFile');
         const qrCodeContainer = document.getElementById('qrCodeContainer');
         const generateQRButton = document.getElementById('generateQR');
@@ -129,7 +131,7 @@
                 const response = await fetch(`/file-content?filename=${filename}`);
                 const data = await response.json();
 
-                fileContent.value = data.content;
+                editUrl.value = data.url;
                 currentEditingFile = filename;
                 editSection.style.display = 'block';
             } catch (error) {
@@ -139,13 +141,15 @@
 
         // Save edited file
         saveFileButton.addEventListener('click', async () => {
+            const url = editUrl.value;
+
             try {
-                const response = await fetch('/create-file', {
+                const response = await fetch('/edit-file', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ filename: currentEditingFile, url: '' }),
+                    body: JSON.stringify({ filename: currentEditingFile, url }),
                 });
 
                 if (response.ok) {
