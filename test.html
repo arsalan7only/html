@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+
+    <title>File Manager with QR Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input, button, textarea {
+            display: block;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 500px;
+        }
+        ul {
+            padding: 0;
+            list-style-type: none;
+        }
+        li {
+            margin: 5px 0;
+        }
+        li button {
+            margin-left: 10px;
+        }
+        #qrScanner {
+            margin-top: 20px;
+        }
+        #qrReader {
+            width: 300px;
+            height: 300px;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>File Manager with QR Scanner</h1>
+
+    <section>
+        <h2>Create or Edit File</h2>
+        <form id="fileForm">
+            <label for="filename">Enter File Name:</label>
+            <input type="text" id="filename" name="filename" placeholder="example.html" required />
+
+            <label for="url">Enter Redirect URL:</label>
+            <input type="text" id="url" name="url" placeholder="https://www.example.com" required />
+
+            <button type="submit">Create/Edit File</button>
+        </form>
+        <p id="responseMessage" style="color: green; font-weight: bold;"></p>
+    </section>
+
+    <section>
+        <h2>File List</h2>
+        <ul id="fileList"></ul>
+    </section>
+
+    <section>
+        <h2>QR Code Scanner</h2>
+        <div id="qrScanner">
+            <div id="qrReader"></div>
+            <p id="qrResult" style="font-weight: bold;"></p>
+        </div>
+    </section>
+
+    <script>
+        const fileForm = document.getElementById('fileForm');
+        const responseMessage = document.getElementById('responseMessage');
+        const fileList = document.getElementById('fileList');
+        const qrResult = document.getElementById('qrResult');
+
+        // Load file list
+        async function loadFiles() {
+            try {
+                const response = await fetch('/list-files');
+                const files = await response.json();
+
+                fileList.innerHTML = '';
+                files.forEach((file) => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = file;
+
+                    // Edit button
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Edit';
+                    listItem.appendChild(editButton);
+
+                    // View button
+                    const viewButton = document.createElement('button');
+                    viewButton.textContent = 'View';
+                    viewButton.addEventListener('click', () => viewFile(file));
+                    listItem.appendChild(viewButton);
+
+                    fileList.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error('Error loading files:', error);
+            }
+        }
+
+        // View file in browser
+        function viewFile(filename) {
+            const fileUrl = `/files/${filename}`;
+            window.open(fileUrl, '_blank');
+        }
+
+        // Handle file creation/editing
+        fileForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const filename = document.getElementById('filename').value;
+            const url = document.getElementById('url').value;
+
+            try {
+                const response = await fetch('/create-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ filename, url }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    responseMessage.textContent = data.message;
+                    responseMessage.style.color = 'green';
+                    loadFiles();
+                } else {
+                    responseMessage.textContent = 'Failed to create or edit the file.';
+                    responseMessage.style.color = 'red';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                responseMessage.textContent = 'An error occurred while creating or editing the file.';
+                responseMessage.style.color = 'red';
+            }
+        });
+
+        // QR Code Scanner
+        function setupQRScanner() {
+            const qrReader = new Html5Qrcode("qrReader");
+            qrReader.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 250 },
+                (decodedText) => {
+                    qrResult.textContent = `QR Code Detected: ${decodedText}`;
+                    qrReader.stop().then(() => {
+                        qrResult.style.color = 'green';
+                        window.open(decodedText, '_blank');
+                    });
+                },
+                (errorMessage) => {
+                    qrResult.textContent = `Scanning...`;
+                }
+            ).catch((err) => {
+                qrResult.textContent = `Error initializing QR Scanner: ${err}`;
+                qrResult.style.color = 'red';
+            });
+        }
+
+        // Initialize
+        loadFiles();
+        setupQRScanner();
+    </script>
+</body>
+</html>
